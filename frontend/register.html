@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Đăng ký - Trello Mini</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="login-container">
+    <h2>📝 Đăng ký tài khoản</h2>
+    <input type="text" id="username" placeholder="Tên đăng nhập"><br>
+    <input type="email" id="email" placeholder="Email"><br>
+    <input type="password" id="password" placeholder="Mật khẩu"><br>
+    <button onclick="register()">Đăng ký</button>
+    <p>Đã có tài khoản? <a href="login.html">Đăng nhập</a></p>
+  </div>
+
+  <script>
+    const API_BASE = "http://127.0.0.1:8000/api";
+
+    async function register() {
+      const username = document.getElementById("username").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+
+      if (!username || !email || !password) return alert("Nhập đầy đủ thông tin!");
+
+      const res = await fetch(`${API_BASE}/auth/register/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, email, password }),
+      });
+
+      if (res.ok) {
+        alert("✅ Đăng ký thành công! Mời đăng nhập.");
+        window.location.href = "login.html";
+      } else {
+        const msg = await res.text();
+        console.error(msg);
+        alert("❌ Đăng ký thất bại! Xem console.");
+      }
+    }
+  </script>
+</body>
+</html>

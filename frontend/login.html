@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đăng nhập Trello Mini</title>
+  <style>
+    /* ===== Nền toàn màn hình ===== */
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background-image: url('images/teamwork.png'); /* đổi đường dẫn ảnh nếu cần */
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ===== Lớp phủ mờ để dễ đọc hơn ===== */
+    body::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(2px);
+    }
+
+    /* ===== Hộp đăng nhập ===== */
+    .auth-box {
+      position: relative;
+      z-index: 1;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(15px);
+      border-radius: 16px;
+      padding: 40px 35px;
+      width: 360px;
+      text-align: center;
+      color: white;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      animation: fadeIn 1s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .auth-box h2 {
+      margin-bottom: 25px;
+      font-weight: 600;
+      font-size: 26px;
+      color: #fff;
+    }
+
+    /* ===== Input ===== */
+    input {
+      width: 100%;
+      padding: 12px 14px;
+      margin: 8px 0;
+      border: none;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      font-size: 15px;
+      outline: none;
+      transition: 0.2s;
+    }
+    input:focus {
+      box-shadow: 0 0 0 2px #3498db;
+    }
+
+    /* ===== Button ===== */
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 12px;
+      background: linear-gradient(90deg, #3498db, #2ecc71);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 500;
+      transition: transform 0.15s ease, opacity 0.2s ease;
+    }
+    button:hover {
+      transform: scale(1.05);
+      opacity: 0.9;
+    }
+
+    /* ===== Chuyển form đăng nhập / đăng ký ===== */
+    .switch {
+      margin-top: 14px;
+      color: #e0e0e0;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .switch:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 480px) {
+      .auth-box {
+        width: 85%;
+        padding: 30px 25px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-box">
+    <h2 id="form-title">Đăng nhập Trello Mini</h2>
+    <input type="text" id="username" placeholder="Tên đăng nhập" />
+    <input type="password" id="password" placeholder="Mật khẩu" />
+    <input type="email" id="email" placeholder="Email (khi đăng ký)" style="display:none;" />
+    <button id="submit-btn">Đăng nhập</button>
+    <p id="switch-form" class="switch">Chưa có tài khoản? Đăng ký</p>
+  </div>
+
+  <script>
+    const API_BASE = "http://127.0.0.1:8000/api";
+    let isRegister = false;
+
+    const title = document.getElementById("form-title");
+    const email = document.getElementById("email");
+    const button = document.getElementById("submit-btn");
+    const switchForm = document.getElementById("switch-form");
+
+    switchForm.onclick = () => {
+      isRegister = !isRegister;
+      title.textContent = isRegister ? "Đăng ký tài khoản" : "Đăng nhập Trello Mini";
+      button.textContent = isRegister ? "Đăng ký" : "Đăng nhập";
+      email.style.display = isRegister ? "block" : "none";
+      switchForm.textContent = isRegister ? "Đã có tài khoản? Đăng nhập" : "Chưa có tài khoản? Đăng ký";
+    };
+
+    button.onclick = async () => {
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const emailVal = document.getElementById("email").value.trim();
+
+      if (!username || !password) {
+        alert("⚠️ Vui lòng nhập đủ tên đăng nhập và mật khẩu!");
+        return;
+      }
+
+      if (isRegister) {
+        const res = await fetch(`${API_BASE}/auth/register/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password, email: emailVal }),
+        });
+        if (res.ok) {
+          alert("✅ Đăng ký thành công! Hãy đăng nhập.");
+          switchForm.onclick();
+        } else {
+          alert("❌ Đăng ký thất bại. Xem console để biết chi tiết.");
+          console.log(await res.text());
+        }
+      } else {
+        const res = await fetch(`${API_BASE}/token/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }),
+        });
+
+        const data = await res.json();
+        if (res.ok && data.access) {
+          localStorage.setItem("access", data.access);
+          localStorage.setItem("refresh", data.refresh);
+          alert("✅ Đăng nhập thành công!");
+          window.location.href = "index.html";
+        } else {
+          alert("❌ Sai thông tin đăng nhập!");
+          console.log(data);
+        }
+      }
+    };
+  </script>
+</body>
+</html>

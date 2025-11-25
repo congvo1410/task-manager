@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Task Manager</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+  <header>
+    <div class="logo">🗂️ TASK MANAGER</div>
+    
+    <div id="user-info">
+      <span id="username-display" style="margin-right: 10px; font-weight: bold;"></span>
+      <button id="theme-toggle" title="Chế độ tối">🌙</button>
+      <button class="btn-logout" onclick="logout()" title="Đăng xuất"><i class="fas fa-sign-out-alt"></i></button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="workspace-section" class="card-section">
+      <h2><i class="fas fa-briefcase"></i> Workspace</h2>
+      
+      <div class="workspace-actions" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+        
+        <select id="workspace-select" style="padding: 8px; border-radius: 5px; min-width: 200px; border: 1px solid #ccc; font-weight: bold;">
+          <option value="" disabled selected>-- Đang tải... --</option>
+        </select>
+
+        <span id="admin-workspace-controls" style="display: none; gap: 5px; align-items: center;">
+            <div style="width: 1px; height: 30px; background: #ccc; margin: 0 10px;"></div> <input type="text" id="new-workspace-name" placeholder="Tên workspace mới..." style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+            <button class="btn-primary" onclick="addWorkspace()">➕ Thêm WS</button>
+            <button id="delete-workspace-btn" class="btn-danger" onclick="deleteWorkspace()">🗑 Xóa WS</button>
+            <button id="trash-workspace-btn" class="btn-secondary" onclick="openWorkspaceTrash()" title="Thùng rác Workspace"><i class="fas fa-trash-restore"></i></button>
+        </span>
+
+        <button id="empty-state-create-btn" class="btn-primary" style="display: none;" onclick="addWorkspacePrompt()">➕ Tạo Workspace Đầu Tiên</button>
+      </div>
+      
+      <div id="member-section" class="member-actions" style="border-top: 1px dashed #ccc; padding-top: 15px; display: none;">
+        <h4>👥 Thành viên</h4>
+        <div id="member-list" style="margin-bottom: 10px;"></div>
+        
+        <div id="admin-invite-area" style="display: none; gap: 5px;">
+            <input type="email" id="new-member-email" placeholder="Email thành viên..." style="padding: 6px; width: 200px;">
+            <button class="btn-secondary" onclick="addMember()">📩 Mời</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="board-section" class="card-section">
+      <div class="board-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>📋 Boards</h2>
+        <div class="tools">
+             <input type="date" id="filter-date" onchange="loadBoards()" title="Lọc task theo ngày hết hạn" style="padding: 5px;">
+             <button class="btn-secondary" onclick="openArchiveModal()"><i class="fas fa-archive"></i> Kho lưu trữ</button>
+             <button class="btn-danger" onclick="openTrashModal()"><i class="fas fa-trash"></i> Thùng rác Thẻ</button>
+        </div>
+      </div>
+
+      <div class="board-actions" style="margin-top: 15px;">
+        <input type="text" id="new-board-name" placeholder="Nhập tên board mới..." style="padding: 8px; width: 250px;">
+        <button class="btn-primary" id="add-board-btn">➕ Thêm Board</button>
+      </div>
+      
+      <div id="boards-container" class="boards-container"></div>
+    </section>
+  </main>
+
+  <div id="card-detail" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" onclick="closeModal('card-detail')">&times;</span>
+      <h3 id="card-title"></h3>
+      <div class="form-group"><label>Mô tả:</label> <textarea id="card-description"></textarea></div>
+      <div class="form-group"><label>Hạn chót:</label> <input type="date" id="card-due-date"></div>
+      <div class="form-group">
+        <label>Trạng thái:</label>
+        <select id="card-status">
+            <option value="TODO">Đang làm</option>
+            <option value="DONE">Đã xong</option>
+            <option value="CANCELLED">Đã hủy</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Nhãn:</label> <input type="text" id="card-labels"></div>
+      <div class="modal-actions">
+        <button class="btn-primary" id="save-card">💾 Lưu lại</button>
+        <button class="btn-danger" id="delete-card-btn" style="float: right;">🗑 Xóa thẻ</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="archive-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" onclick="closeModal('archive-modal')">&times;</span>
+      <h3>📦 Kho lưu trữ</h3><div id="archive-list" class="modal-list-container"></div>
+    </div>
+  </div>
+  <div id="trash-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" onclick="closeModal('trash-modal')">&times;</span>
+      <h3>🗑 Thùng rác Thẻ</h3><div id="trash-list" class="modal-list-container"></div>
+    </div>
+  </div>
+  <div id="ws-trash-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" onclick="closeModal('ws-trash-modal')">&times;</span>
+      <h3>🗑 Thùng rác Workspace</h3><div id="ws-trash-list" class="modal-list-container"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

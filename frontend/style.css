@@ -1,0 +1,363 @@
+/* ===========================
+ 🌈 TRELL0 MINI PRO MAX STYLE
+=========================== */
+
+/* ======= Biến màu sáng / tối ======= */
+:root {
+  --bg-light: #eef6ff;
+  --card-light: #ffffff;
+  --primary: #0079bf;
+  --secondary: #00aaff;
+  --text-color: #333;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+
+  --bg-dark: #1e1f26;
+  --card-dark: #2a2b32;
+  --text-dark: #f5f6fa;
+  --shadow-dark: rgba(0, 0, 0, 0.5);
+}
+
+/* Dark mode toggle */
+body.dark {
+  background: var(--bg-dark);
+  color: var(--text-dark);
+}
+
+/* ========== Tổng thể ========== */
+body {
+  font-family: "Poppins", "Segoe UI", sans-serif;
+  margin: 0;
+  background: var(--bg-light);
+  color: var(--text-color);
+  line-height: 1.6;
+  transition: background 0.4s, color 0.4s;
+  overflow-x: hidden;
+}
+
+/* ========== Header ========== */
+header {
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 40px;
+  box-shadow: 0 4px 15px var(--shadow-color);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+#user-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* 🔘 Nút chuyển chế độ */
+#theme-toggle {
+  background: white;
+  color: var(--primary);
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  font-size: 18px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  transition: 0.25s;
+}
+#theme-toggle:hover {
+  transform: rotate(20deg) scale(1.1);
+}
+
+/* ========== Logout Button ========== */
+.btn-logout {
+  background: linear-gradient(90deg, #ff4b4b, #e63946);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 7px 16px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: 0.25s;
+}
+.btn-logout:hover {
+  background: #c82333;
+  transform: scale(1.08);
+}
+
+/* ========== Container ========== */
+.container {
+  max-width: 1300px;
+  margin: 30px auto;
+  padding: 0 25px;
+}
+
+/* ========== Section Box ========== */
+.card-section {
+  background: var(--card-light);
+  border-radius: 20px;
+  padding: 25px;
+  margin-bottom: 30px;
+  box-shadow: 0 8px 30px var(--shadow-color);
+  transition: 0.4s ease;
+}
+.card-section:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.15);
+}
+body.dark .card-section {
+  background: var(--card-dark);
+  box-shadow: 0 8px 30px var(--shadow-dark);
+}
+.card-section h2 {
+  margin-bottom: 18px;
+  color: var(--primary);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+/* ========== Input / Select / Buttons ========== */
+.workspace-actions,
+.board-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+select,
+input {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 10px;
+  background: #f5f8ff;
+  box-shadow: inset 2px 2px 5px #cfd9e6, inset -2px -2px 5px #fff;
+  font-size: 15px;
+  transition: 0.3s;
+}
+body.dark select,
+body.dark input {
+  background: #2b2c34;
+  color: #fff;
+  box-shadow: inset 2px 2px 4px #1a1a1d, inset -2px -2px 4px #383a40;
+}
+select:focus,
+input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 121, 191, 0.3);
+}
+
+/* Buttons */
+button {
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.25s;
+  font-size: 15px;
+  padding: 8px 16px;
+}
+.btn-primary {
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  color: #fff;
+  box-shadow: 0 3px 8px rgba(0, 121, 191, 0.25);
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  background: #026aa7;
+}
+.btn-danger {
+  background: linear-gradient(90deg, #ff6b6b, #e63946);
+  color: #fff;
+  box-shadow: 0 3px 8px rgba(230, 57, 70, 0.25);
+}
+.btn-danger:hover {
+  transform: translateY(-2px);
+  background: #d62828;
+}
+
+/* ========== Boards Layout ========== */
+.boards-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  margin-top: 25px;
+  justify-content: flex-start;
+}
+.board {
+  background: linear-gradient(180deg, #fafdff 0%, #eef6ff 100%);
+  border-radius: 18px;
+  padding: 18px;
+  width: 350px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.07);
+  transition: 0.3s ease;
+  animation: fadeIn 0.6s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.board:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+}
+body.dark .board {
+  background: #2b2c34;
+  box-shadow: 0 5px 15px var(--shadow-dark);
+}
+.board h2 {
+  font-size: 18px;
+  color: var(--primary);
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+/* ========== List & Card ========== */
+.list {
+  background: var(--card-light);
+  border-radius: 12px;
+  padding: 12px;
+  margin-top: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: 0.25s;
+  animation: fadeIn 0.4s ease;
+}
+body.dark .list {
+  background: #2a2b32;
+  box-shadow: 0 4px 10px var(--shadow-dark);
+}
+.list:hover {
+  transform: scale(1.02);
+}
+
+.card {
+  background: linear-gradient(180deg, #ffffff 0%, #f6faff 100%);
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition: 0.25s ease;
+  border-left: 6px solid var(--primary);
+  animation: popIn 0.3s ease;
+}
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+body.dark .card {
+  background: #2f3038;
+  border-left-color: #00aaff;
+}
+.card:hover {
+  transform: translateY(-3px);
+}
+.card strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  color: #004c8c;
+}
+.card-desc {
+  font-size: 13px;
+  color: #444;
+  margin: 4px 0 2px;
+  font-style: italic;
+}
+.card-label {
+  display: inline-block;
+  background: linear-gradient(90deg, #007bff, #00aaff);
+  color: white;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  margin-right: 5px;
+  text-transform: uppercase;
+}
+.card-date {
+  display: block;
+  color: #777;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* ========== Modal ========== */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 100;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+}
+.modal-content {
+  background-color: var(--card-light);
+  margin: 100px auto;
+  padding: 28px 30px;
+  border-radius: 16px;
+  width: 480px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+  position: relative;
+  animation: modalFade 0.35s ease;
+}
+body.dark .modal-content {
+  background: #2a2b32;
+  color: #fff;
+}
+@keyframes modalFade {
+  from { opacity: 0; transform: translateY(-30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+#close-modal {
+  position: absolute;
+  top: 14px;
+  right: 20px;
+  cursor: pointer;
+  font-size: 26px;
+  color: #888;
+  transition: 0.25s;
+}
+#close-modal:hover {
+  color: #000;
+  transform: rotate(90deg);
+}
+
+/* Input modal */
+.modal-content input,
+.modal-content textarea {
+  width: 100%;
+  margin: 8px 0 12px;
+  padding: 9px 12px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  font-size: 14px;
+  transition: 0.25s;
+}
+.modal-content input:focus,
+.modal-content textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 5px rgba(0, 121, 191, 0.3);
+}
+
+/* ========== Scrollbar ========== */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #b0c4de;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}

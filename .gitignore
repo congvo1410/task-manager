@@ -1,0 +1,14 @@
+# Bỏ qua thư mục môi trường ảo
+venv/
+env/
+.env
+
+# Bỏ qua các file biên dịch Python
+__pycache__/
+*.py[cod]
+
+# Bỏ qua cơ sở dữ liệu mặc định của Django (tùy chọn, nếu bạn muốn dùng DB riêng mỗi máy)
+db.sqlite3
+
+# Bỏ qua các file hệ thống
+.DS_Store
