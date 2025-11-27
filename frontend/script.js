@@ -1,4 +1,4 @@
-const API_BASE = "http://127.0.0.1:8000/api";
+const API_BASE = "https://task-manager-14nj.onrender.com/api";
 let currentWorkspaceId = null;
 let currentUserRole = null;
 let allWorkspaces = [];
