@@ -10,8 +10,21 @@ class WorkspaceSerializer(serializers.ModelSerializer):
 
     def get_user_role(self, obj):
         user = self.context['request'].user
+        
+        # 1. Nếu chưa đăng nhập -> Không có quyền gì hết
         if user.is_anonymous:
-            return None
+            return None 
+
+        # 2. Nếu là Superuser (Admin hệ thống) -> Trả về 'system_admin' (Quyền to nhất)
+        if user.is_superuser:
+            return 'system_admin'
+
+        # 3. QUAN TRỌNG: Nếu là Người tạo ra Workspace này -> Trả về 'owner'
+        # (Dòng này giúp Member thấy nút Xóa ở Workspace do chính mình tạo)
+        if obj.owner == user:
+            return 'owner'
+
+        # 4. Kiểm tra trong bảng thành viên bình thường (cho các vai trò được mời)
         try:
             member = WorkspaceMember.objects.get(workspace=obj, user=user)
             return member.role

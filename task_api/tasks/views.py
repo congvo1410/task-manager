@@ -47,80 +47,24 @@ class WorkspaceViewSet(viewsets.ModelViewSet):
     serializer_class = WorkspaceSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    # --- SỬA: CHO PHÉP HIỆN TẤT CẢ WORKSPACE (CHƯA XÓA) ---
-    # Để Member có thể thấy được Workspace cũ của Admin
     def get_queryset(self):
         return Workspace.objects.filter(is_deleted=False)
 
     def perform_create(self, serializer):
         user = self.request.user
         workspace = serializer.save(owner=user)
-        # Người tạo auto là Admin
         WorkspaceMember.objects.create(workspace=workspace, user=user, role='admin')
 
-    # XÓA MỀM (Soft Delete) - Chỉ Admin workspace mới được xóa
     def destroy(self, request, *args, **kwargs):
         workspace = self.get_object()
-        
-        # Logic kiểm tra quyền: Owner hoặc Admin Workspace
-        is_authorized = False
-        if workspace.owner == request.user:
-            is_authorized = True
-        else:
-            try:
-                member = WorkspaceMember.objects.get(workspace=workspace, user=request.user)
-                if member.role == 'admin':
-                    is_authorized = True
-            except WorkspaceMember.DoesNotExist:
-                pass
-        
-        if not is_authorized:
-            return Response({"error": "Bạn không có quyền xóa Workspace này!"}, status=403)
-
-        workspace.is_deleted = True
-        workspace.deleted_at = timezone.now()
-        workspace.save()
-        return Response({"message": "Đã chuyển vào thùng rác"}, status=204)
-
-    # API Xem thùng rác Workspace
-    @action(detail=False, methods=['get'])
-    def trash(self, request):
         user = request.user
-        # Lấy các workspace đã xóa mà user là owner HOẶC là admin
-        deleted_workspaces = Workspace.objects.filter(
-            Q(owner=user) | Q(memberships__user=user, memberships__role='admin'),
-            is_deleted=True
-        ).distinct()
-        
-        serializer = self.get_serializer(deleted_workspaces, many=True)
-        return Response(serializer.data)
-
-    # API Khôi phục Workspace
-    @action(detail=True, methods=['post'])
-    def restore(self, request, pk=None):
-        try:
-            workspace = Workspace.objects.get(pk=pk, is_deleted=True)
-            # Kiểm tra quyền
-            is_authorized = False
-            if workspace.owner == request.user:
-                is_authorized = True
-            else:
-                try:
-                    member = WorkspaceMember.objects.get(workspace=workspace, user=request.user)
-                    if member.role == 'admin':
-                        is_authorized = True
-                except WorkspaceMember.DoesNotExist:
-                    pass
-            
-            if not is_authorized:
-                return Response({"error": "Không có quyền khôi phục"}, status=403)
-            
-            workspace.is_deleted = False
-            workspace.deleted_at = None
+        if user.is_superuser or workspace.owner == user:
+            workspace.is_deleted = True
+            workspace.deleted_at = timezone.now()
             workspace.save()
-            return Response({"message": "Đã khôi phục workspace"})
-        except Workspace.DoesNotExist:
-            return Response({"error": "Không tìm thấy workspace"}, status=404)
+            return Response({"message": "Đã chuyển vào thùng rác"}, status=204)
+        else:
+            return Response({"error": "Chỉ người tạo mới được xóa Workspace này!"}, status=403)
 
     @action(detail=True, methods=['get'])
     def members(self, request, pk=None):
@@ -132,22 +76,21 @@ class WorkspaceViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def add_member(self, request, pk=None):
         workspace = self.get_object()
-        # Check quyền
-        is_admin = False
-        if workspace.owner == request.user:
-            is_admin = True
-        elif WorkspaceMember.objects.filter(workspace=workspace, user=request.user, role='admin').exists():
-            is_admin = True
-            
-        if not is_admin:
-            return Response({"error": "Chỉ Admin mới được thêm thành viên"}, status=403)
+        user = request.user
+        is_authorized = False
+        if user.is_superuser or workspace.owner == user:
+            is_authorized = True
+        elif WorkspaceMember.objects.filter(workspace=workspace, user=user, role='admin').exists():
+            is_authorized = True
+
+        if not is_authorized:
+            return Response({"error": "Bạn không có quyền thêm thành viên"}, status=403)
 
         email = request.data.get('email')
         try:
             user_to_add = User.objects.get(email=email)
             if WorkspaceMember.objects.filter(workspace=workspace, user=user_to_add).exists():
-                return Response({"error": "Đã là thành viên!"}, status=400)
-            
+                return Response({"error": "Người này đã là thành viên!"}, status=400)
             WorkspaceMember.objects.create(workspace=workspace, user=user_to_add, role='member')
             return Response({"message": "Đã thêm thành viên!"})
         except User.DoesNotExist:
@@ -156,19 +99,64 @@ class WorkspaceViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def remove_member(self, request, pk=None):
         workspace = self.get_object()
-        # Check quyền
-        is_admin = False
-        if workspace.owner == request.user:
-            is_admin = True
-        elif WorkspaceMember.objects.filter(workspace=workspace, user=request.user, role='admin').exists():
-            is_admin = True
+        user = request.user
+        is_authorized = False
+        if user.is_superuser or workspace.owner == user:
+            is_authorized = True
+        elif WorkspaceMember.objects.filter(workspace=workspace, user=user, role='admin').exists():
+            is_authorized = True
 
-        if not is_admin:
-            return Response({"error": "Chỉ Admin mới được xóa thành viên"}, status=403)
+        if not is_authorized:
+            return Response({"error": "Bạn không có quyền xóa thành viên"}, status=403)
 
-        user_id = request.data.get('user_id')
-        WorkspaceMember.objects.filter(workspace=workspace, user_id=user_id).delete()
+        target_user_id = request.data.get('user_id')
+        if workspace.owner and target_user_id == workspace.owner.id:
+             return Response({"error": "Không thể xóa chủ sở hữu!"}, status=400)
+
+        WorkspaceMember.objects.filter(workspace=workspace, user_id=target_user_id).delete()
         return Response({"message": "Đã xóa thành viên!"})
+
+    @action(detail=True, methods=['post'])
+    def update_member_role(self, request, pk=None):
+        workspace = self.get_object()
+        user = request.user
+        if not (user.is_superuser or workspace.owner == user):
+            return Response({"error": "Chỉ chủ sở hữu mới được phân quyền!"}, status=403)
+
+        target_user_id = request.data.get('user_id')
+        new_role = request.data.get('role')
+        if target_user_id == user.id:
+             return Response({"error": "Không thể tự đổi quyền của chính mình!"}, status=400)
+
+        try:
+            member = WorkspaceMember.objects.get(workspace=workspace, user_id=target_user_id)
+            member.role = new_role
+            member.save()
+            return Response({"message": f"Đã cập nhật quyền thành {new_role}!"})
+        except WorkspaceMember.DoesNotExist:
+            return Response({"error": "Thành viên không tồn tại"}, status=404)
+
+    @action(detail=False, methods=['get'])
+    def trash(self, request):
+        user = request.user
+        deleted = Workspace.objects.filter(
+            Q(owner=user) | Q(memberships__user=user, memberships__role='admin'),
+            is_deleted=True
+        ).distinct()
+        serializer = self.get_serializer(deleted, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def restore(self, request, pk=None):
+        try:
+            ws = Workspace.objects.get(pk=pk, is_deleted=True)
+            if ws.owner != request.user and not request.user.is_superuser:
+                 return Response({"error": "Không có quyền"}, status=403)
+            ws.is_deleted = False
+            ws.deleted_at = None
+            ws.save()
+            return Response({"message": "Đã khôi phục"})
+        except Workspace.DoesNotExist: return Response({"error": "Không tìm thấy"}, status=404)
 
 
 # ===================== BOARD & LIST ===================== #
@@ -184,66 +172,74 @@ class ListViewSet(viewsets.ModelViewSet):
     serializer_class = ListSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-# ===================== CARD (QUAN TRỌNG) ===================== #
+# ===================== CARD (LOGIC CHUẨN) ===================== #
 class CardViewSet(viewsets.ModelViewSet):
     serializer_class = CardSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    # --- SỬA LẠI: LỌC CARD CHỨ KHÔNG PHẢI WORKSPACE ---
     def get_queryset(self):
-        # Lấy các thẻ chưa xóa và chưa lưu trữ
+        # Lấy thẻ đang hoạt động (Chưa xóa và Chưa cất kho)
         queryset = Card.objects.filter(is_deleted=False, is_archived=False)
-        
-        # Hỗ trợ lọc theo ngày
         date_str = self.request.query_params.get('date')
-        if date_str:
-            queryset = queryset.filter(due_date=date_str)
-            
+        if date_str: queryset = queryset.filter(due_date=date_str)
         return queryset
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
 
+    # 1. XÓA MỀM -> VÀO THÙNG RÁC (Lưu vĩnh viễn)
     @action(detail=True, methods=['post'])
     def soft_delete(self, request, pk=None):
         card = self.get_object()
-        card.is_deleted = True
+        card.is_deleted = True # Đánh dấu là Đã xóa
+        card.is_archived = False # Đảm bảo không nằm trong kho
         card.deleted_at = timezone.now()
         card.save()
-        return Response({"message": "Đã vào thùng rác"})
+        return Response({"message": "Đã vào thùng rác (Lưu vĩnh viễn)"})
 
+    # 2. XEM THÙNG RÁC (Chỉ hiện thẻ đã xóa)
     @action(detail=False, methods=['get'])
     def trash(self, request):
-        deadline = timezone.now() - timedelta(days=5)
-        Card.objects.filter(is_deleted=True, deleted_at__lt=deadline).delete()
+        # Không có logic xóa tự động ở đây
         trash_cards = Card.objects.filter(is_deleted=True)
         serializer = self.get_serializer(trash_cards, many=True)
         return Response(serializer.data)
 
+    # 3. KHÔI PHỤC (Dùng chung cho cả Thùng rác và Kho)
     @action(detail=True, methods=['post'])
     def restore(self, request, pk=None):
         try:
-            card = Card.objects.get(pk=pk)
-            card.is_deleted = False
-            card.deleted_at = None
-            card.save()
+            c = Card.objects.get(pk=pk)
+            c.is_deleted = False
+            c.deleted_at = None
+            c.is_archived = False
+            c.archived_at = None
+            c.save()
             return Response({"message": "Khôi phục thành công"})
         except Card.DoesNotExist: return Response({"error": "Không tìm thấy"}, status=404)
 
+    # 4. LƯU TRỮ -> VÀO KHO (Cho thẻ đã xong)
     @action(detail=True, methods=['post'])
     def archive(self, request, pk=None):
-        card = self.get_object()
-        card.is_archived = True
-        card.save()
-        return Response({"message": "Đã lưu trữ"})
+        c = self.get_object()
+        c.is_archived = True
+        c.is_deleted = False # Đảm bảo không nằm trong thùng rác
+        c.archived_at = timezone.now()
+        c.status = 'DONE'
+        c.save()
+        return Response({"message": "Đã lưu trữ (Tự xóa sau 7 ngày)"})
 
+    # 5. XEM KHO LƯU TRỮ (Tự xóa sau 7 ngày)
     @action(detail=False, methods=['get'])
     def archived(self, request):
-        archived_cards = Card.objects.filter(is_archived=True, is_deleted=False)
+        # Logic xóa tự động cho Kho lưu trữ
+        deadline = timezone.now() - timedelta(days=7)
+        Card.objects.filter(is_archived=True, archived_at__lt=deadline).delete()
+
+        archived_cards = Card.objects.filter(is_archived=True)
         serializer = self.get_serializer(archived_cards, many=True)
         return Response(serializer.data)
 
-# ===================== USER VIEWSET ===================== #
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer

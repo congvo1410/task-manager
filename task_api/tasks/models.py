@@ -3,15 +3,17 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta
 
+# ================= WORKSPACE ================= #
 class Workspace(models.Model):
     name = models.CharField(max_length=255)
     owner = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    # Mối quan hệ Members
+    
+    # Mối quan hệ Members (thông qua bảng trung gian WorkspaceMember)
     members = models.ManyToManyField(User, through='WorkspaceMember', related_name='workspaces')
     
-    # === THÊM TRƯỜNG CHO THÙNG RÁC ===
+    # Thùng rác Workspace
     is_deleted = models.BooleanField(default=False)
     deleted_at = models.DateTimeField(null=True, blank=True)
 
@@ -29,12 +31,12 @@ class WorkspaceMember(models.Model):
     joined_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('workspace', 'user')
+        unique_together = ('workspace', 'user') # Đảm bảo 1 user chỉ xuất hiện 1 lần trong 1 workspace
 
     def __str__(self):
         return f"{self.user.username} ({self.role})"
 
-# === Các Model dưới giữ nguyên ===
+# ================= BOARD & LIST ================= #
 class Board(models.Model):
     workspace = models.ForeignKey(
         Workspace, on_delete=models.CASCADE, related_name='boards', null=True, blank=True
@@ -42,17 +44,26 @@ class Board(models.Model):
     name = models.CharField(max_length=255)
     owner = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    # Board cũng nên có is_deleted nếu muốn xóa mềm board, nhưng tạm thời workspace quan trọng hơn
-    def __str__(self): return self.name
+
+    def __str__(self):
+        return self.name
 
 class List(models.Model):
     board = models.ForeignKey(Board, on_delete=models.CASCADE, related_name='lists')
     title = models.CharField(max_length=255)
     order = models.PositiveIntegerField(default=0)
-    def __str__(self): return self.title
 
+    def __str__(self):
+        return self.title
+
+# ================= CARD (THẺ CÔNG VIỆC) ================= #
 class Card(models.Model):
-    STATUS_CHOICES = [('TODO', 'Đang làm'), ('DONE', 'Đã xong'), ('CANCELLED', 'Đã hủy')]
+    STATUS_CHOICES = [
+        ('TODO', 'Đang làm'),
+        ('DONE', 'Đã xong'),
+        ('CANCELLED', 'Đã hủy'),
+    ]
+
     list = models.ForeignKey(List, on_delete=models.CASCADE, related_name='cards')
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
@@ -61,14 +72,25 @@ class Card(models.Model):
     order = models.PositiveIntegerField(default=0)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='cards', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='TODO')
-    is_archived = models.BooleanField(default=False)
-    is_deleted = models.BooleanField(default=False)
+    
+    # === CÁC TRƯỜNG QUAN TRỌNG ĐÃ ĐƯỢC BỔ SUNG ĐẦY ĐỦ ===
+    
+    # 1. Kho lưu trữ (Archive)
+    is_archived = models.BooleanField(default=False) 
+    archived_at = models.DateTimeField(null=True, blank=True) # <-- QUAN TRỌNG: Cần cái này để tính 7 ngày
+
+    # 2. Thùng rác (Trash)
+    is_deleted = models.BooleanField(default=False)  
     deleted_at = models.DateTimeField(null=True, blank=True)
 
     @property
     def is_overdue(self):
+        # Kiểm tra quá hạn (chỉ tính khi chưa xong, chưa xóa, chưa cất kho)
         if self.due_date and self.status != 'DONE' and not self.is_deleted and not self.is_archived:
             return timezone.now().date() > self.due_date
         return False
-    def __str__(self): return self.title
+
+    def __str__(self):
+        return self.title
